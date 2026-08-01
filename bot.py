@@ -15,14 +15,10 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 bot_is_sleeping = False
-# Lưu danh sách key đang hoạt động (Ai nhập trước người đó nhận)
 active_keys = set() 
 
-# 👉 Thay số 0 bằng ID Discord của bạn (Dùng lệnh !myid trong chat để lấy ID)
-OWNER_ID = 1530913781515812925  
-
-# 👉 THAY ĐỔI ĐƯỜNG LINK WEB SAU KHI DEPLOY LÊN RENDER VÀO ĐÂY:
-CUSTOM_GET_KEY_URL = "http://localhost:5000" 
+OWNER_ID = 1530913781515812925  # Thay ID của bạn vào đây
+CUSTOM_GET_KEY_URL = "https://nghuydiy-bot.onrender.com/" 
 
 @bot.event
 async def on_ready():
@@ -31,7 +27,7 @@ async def on_ready():
     for guild in bot.guilds:
         embed = discord.Embed(
             title="🟢 BOT ĐÃ KHỞI ĐỘNG THÀNH CÔNG!",
-            description="Hệ thống xác thực Key VIP (NGHUYDIY-) không cần nhập ID đã sẵn sàng.",
+            description="Hệ thống xác thực Key VIP (NGHUYDIY-) dạng một lần đã sẵn sàng.",
             color=discord.Color.green()
         )
         embed.add_field(name="Lệnh cơ bản", value="Dùng `!help` hoặc `!getkey` để bắt đầu.", inline=False)
@@ -78,7 +74,7 @@ async def on_member_join(member):
         except Exception as e:
             print(f"Không thể gửi tin nhắn chào mừng: {e}")
 
-# --- CẤU HÌNH WEB SERVER (FLASK) - KHÔNG CẦN NHẬP ID ---
+# --- CẤU HÌNH WEB SERVER (FLASK) ---
 app = Flask(__name__)
 
 HTML_TEMPLATE = """
@@ -88,31 +84,66 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <title>Hệ Thống Get Key VIP - NGHUYDIY</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #0f172a; color: #fff; text-align: center; padding-top: 50px; }
-        .container { background: #1e293b; padding: 30px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: 400px; }
-        button { background: #22c55e; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 95%; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background-color: #0f172a; color: #fff; text-align: center; padding-top: 80px; }
+        .container { background: #1e293b; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.6); width: 420px; }
+        button { background: #22c55e; color: white; border: none; padding: 14px 24px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
         button:hover { background: #16a34a; }
-        .box { background: #334155; padding: 15px; margin-top: 15px; border-radius: 5px; word-break: break-all; text-align: left; }
-        code { color: #facc15; font-family: monospace; font-size: 16px; }
+        .key-box { background: #334155; padding: 20px; border-radius: 8px; cursor: pointer; border: 2px dashed #38bdf8; margin-top: 10px; transition: 0.2s; }
+        .key-box:hover { background: #475569; }
+        code { color: #facc15; font-size: 26px; font-weight: bold; font-family: monospace; display: block; margin-top: 5px; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #22c55e; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>NHẬN KEY VIP DISCORD</h2>
-        <p>Bấm nút bên dưới để tạo ngay Key VIP (Không cần nhập ID):</p>
-        <form method="POST">
-            <button type="submit">Tạo Key Ngay</button>
-        </form>
-        {% if key %}
-            <div class="box">
-                <p>🔑 Key của bạn (Dùng 1 lần): <br><code>{{ key }}</code></p>
-                <p style="font-size: 13px; color: #cbd5e1; margin-top: 10px;">
-                    👉 Vào Discord dùng lệnh:<br>
-                    <code>!verify {{ key }}</code>
-                </p>
+        
+        {% if not key %}
+            <p>Bấm nút bên dưới để khởi tạo Key của bạn:</p>
+            <form method="POST" id="keyForm">
+                <button type="submit" id="createBtn">Tạo Key Ngay</button>
+            </form>
+        {% else %}
+            <p style="color: #38bdf8; font-weight: bold;">🔑 Nhấn vào ô bên dưới để sao chép & tự đóng trang:</p>
+            <div class="key-box" onclick="copyAndClose('{{ key }}')">
+                <span style="font-size: 14px; color: #cbd5e1;">BẤM ĐỂ SAO CHÉP</span>
+                <code>{{ key }}</code>
             </div>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 15px;">(Sau khi sao chép, trang web sẽ tự động đóng lại)</p>
+            
+            <script>
+                // Lưu trạng thái vào trình duyệt để chống F5 hoặc cố tình truy cập lại trang kết quả
+                if (localStorage.getItem("key_claimed")) {
+                    window.location.href = "/";
+                } else {
+                    localStorage.setItem("key_claimed", "true");
+                }
+
+                function copyAndClose(text) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        let toast = document.getElementById("toast");
+                        toast.style.display = "block";
+                        setTimeout(function() {
+                            window.close();
+                            // Phòng trường hợp trình duyệt chặn window.close() tự động
+                            document.body.innerHTML = "<h2 style='color:#22c55e; margin-top:100px;'>Đã sao chép Key thành công! Bạn có thể tắt tab này.</h2>";
+                        }, 800);
+                    }, function(err) {
+                        alert('Không thể tự sao chép, vui lòng copy thủ công!');
+                    });
+                }
+            </script>
         {% endif %}
     </div>
+
+    <div id="toast" class="toast">Đã sao chép Key thành công! Đang đóng trang...</div>
+
+    <script>
+        // Xóa bộ nhớ chống F5 nếu người dùng quay lại trang chủ lấy lượt mới
+        if (window.location.pathname === "/" && !window.location.search) {
+            // Có thể giữ hoặc reset tùy ý, ở đây cho phép tạo mới nếu vào lại từ đầu
+        }
+    </script>
 </body>
 </html>
 """
@@ -121,7 +152,6 @@ HTML_TEMPLATE = """
 def home():
     generated_key = None
     if request.method == "POST":
-        # Tạo chuỗi ngẫu nhiên không cần quan tâm ID người dùng
         chars = string.ascii_uppercase + string.digits
         random_str = ''.join(random.choice(chars) for _ in range(8))
         key = f"NGHUYDIY-{random_str}"
@@ -146,8 +176,8 @@ async def myid(ctx):
 async def help_command(ctx):
     if bot_is_sleeping: return
     embed = discord.Embed(title="🤖 HỆ THỐNG LỆNH", color=discord.Color.green())
-    embed.add_field(name="Lệnh Thành Viên", value="`!getkey` - Lấy link web tạo key NGHHUYDIY-\n`!verify <key>` - Kích hoạt nhận VIP (Ai nhanh người đó được)\n`!myid` - Lấy Discord ID của bạn", inline=False)
-    embed.add_field(name="Lệnh Chủ Bot (Đặc Biệt)", value="`!tao_key` - Tạo key ngẫu nhiên trực tiếp trong chat (Chỉ chủ bot)\n`!vip @user` | `!unvip @user`\n`!clear` | `!kick` | `!timeout`\n`!sleep` | `!wakeup` | `!shutdown`", inline=False)
+    embed.add_field(name="Lệnh Thành Viên", value="`!getkey` - Lấy link web tạo key NGHHUYDIY-\n`!verify <key>` - Kích hoạt nhận VIP\n`!myid` - Lấy Discord ID", inline=False)
+    embed.add_field(name="Lệnh Chủ Bot", value="`!tao_key` - Tạo key trực tiếp trong chat\n`!vip @user` | `!unvip @user`\n`!clear` | `!kick` | `!timeout`\n`!sleep` | `!wakeup` | `!shutdown`", inline=False)
     await ctx.send(embed=embed)
 
 @bot.command(name="getkey")
@@ -162,7 +192,7 @@ async def tao_key(ctx):
     if bot_is_sleeping: return
     
     if ctx.author.id != OWNER_ID:
-        await ctx.send("⛔ Bạn không có quyền sử dụng lệnh này! Chỉ chủ bot mới có thể tạo key.")
+        await ctx.send("⛔ Bạn không có quyền sử dụng lệnh này!")
         return
     
     chars = string.ascii_uppercase + string.digits
@@ -172,7 +202,7 @@ async def tao_key(ctx):
     active_keys.add(key)
     
     try:
-        await ctx.send(f"✅ Đã tạo key ngẫu nhiên thành công:\n🔑 Key: `{key}`\n*(Ai sử dụng lệnh `!verify` đầu tiên sẽ kích hoạt được)*")
+        await ctx.send(f"✅ Đã tạo key ngẫu nhiên thành công:\n🔑 Key: `{key}`")
     except Exception as e:
         print(f"Lỗi gửi tin nhắn tạo key: {e}")
 
@@ -181,57 +211,42 @@ async def verify(ctx, user_key: str):
     if bot_is_sleeping: return
     
     if not user_key.startswith("NGHUYDIY-"):
-        await ctx.send("❌ Key không hợp lệ! Key chuẩn hệ thống phải bắt đầu bằng tiền tố `NGHUYDIY-`.")
+        await ctx.send("❌ Key không hợp lệ! Key phải bắt đầu bằng `NGHUYDIY-`.")
         return
     
-    # Kiểm tra key có tồn tại trong hệ thống hay không
     if user_key in active_keys:
         role = discord.utils.get(ctx.guild.roles, name="VIP")
         if role:
             await ctx.author.add_roles(role)
             await ctx.send(f"🎉 Xác thực thành công! {ctx.author.mention} đã nhận được quyền `{role.name}`.")
-            
-            # XÓA VĨNH VIỄN KEY NGAY SAU KHI CÓ NGƯỜI KÍCH HOẠT ĐẦU TIÊN
             active_keys.remove(user_key)
         else:
-            await ctx.send("❌ Lỗi: Server của bạn chưa tạo Role có tên chính xác là `VIP`.")
+            await ctx.send("❌ Lỗi: Server chưa tạo Role có tên chính xác là `VIP`.")
     else:
-        await ctx.send("❌ Key không tồn tại hoặc đã có người khác nhanh tay kích hoạt trước đó rồi!")
+        await ctx.send("❌ Key không tồn tại hoặc đã được sử dụng trước đó!")
 
-# --- LỆNH CẤP VÀ GỠ VIP ---
+# --- CÁC LỆNH QUẢN TRỊ KHÁC ---
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def vip(ctx, member: discord.Member):
     if bot_is_sleeping: return
-    
     role = discord.utils.get(ctx.guild.roles, name="VIP")
     if role:
         await member.add_roles(role)
-        await ctx.send(f"👑 Đã cấp quyền **VIP** thành công cho {member.mention}!")
+        await ctx.send(f"👑 Đã cấp quyền **VIP** cho {member.mention}!")
     else:
-        await ctx.send("❌ Lỗi: Server chưa tạo Role có tên là `VIP`.")
-
-@vip.error
-async def vip_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("⛔ Bạn không có quyền sử dụng lệnh này!")
+        await ctx.send("❌ Server chưa tạo Role `VIP`.")
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def unvip(ctx, member: discord.Member):
     if bot_is_sleeping: return
-    
     role = discord.utils.get(ctx.guild.roles, name="VIP")
     if role and role in member.roles:
         await member.remove_roles(role)
         await ctx.send(f"❌ Đã gỡ quyền **VIP** của {member.mention}!")
     else:
-        await ctx.send(f"⚠️ Thành viên {member.mention} không có role VIP hoặc server chưa tạo role này.")
-
-@unvip.error
-async def unvip_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        await ctx.send("⛔ Bạn không có quyền sử dụng lệnh này!")
+        await ctx.send(f"⚠️ Thành viên không có role VIP.")
 
 @bot.command()
 async def serverinfo(ctx):
@@ -248,7 +263,6 @@ async def coinflip(ctx):
     result = random.choice(["Mặt Ngửa (Heads)", "Mặt Sấp (Tails)"])
     await ctx.send(f"🪙 Kết quả tung đồng xu: **{result}**")
 
-# --- LỆNH QUẢN TRỊ KHÁC ---
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def clear(ctx, amount: int):
@@ -261,7 +275,7 @@ async def clear(ctx, amount: int):
 async def kick(ctx, member: discord.Member, *, reason="Không có lý do"):
     if bot_is_sleeping: return
     await member.kick(reason=reason)
-    await ctx.send(f"👢 Đã đá {member.mention}. Lý do: {reason}")
+    await ctx.send(f"👢 Đã đá {member.mention}.")
 
 @bot.command()
 async def timeout(ctx, member: discord.Member, minutes: int, *, reason="Không có lý do"):
@@ -286,7 +300,7 @@ async def wakeup(ctx):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def shutdown(ctx):
-    await ctx.send("🛑 Tắt bot hoàn toàn...")
+    await ctx.send("🛑 Tắt bot...")
     await bot.close()
 
 # --- BỘ LỌC LINK LẠ ---
@@ -325,4 +339,4 @@ if __name__ == "__main__":
     web_thread.daemon = True
     web_thread.start()
     
-    bot.run("MTUzMjcyNDU2OTg3MjI3MzQzOQ.GdWHXc.WTC0j82OHBYpRTkJYJZEIVtXM_keN4l_cYI6JM")
+    bot.run("cocaiconcac")
