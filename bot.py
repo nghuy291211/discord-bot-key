@@ -5,7 +5,7 @@ import string
 from datetime import timedelta
 import threading
 import os
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template_string, request, session
 
 # --- CẤU HÌNH DISCORD BOT ---
 intents = discord.Intents.default()
@@ -27,7 +27,7 @@ async def on_ready():
     for guild in bot.guilds:
         embed = discord.Embed(
             title="🟢 BOT ĐÃ KHỞI ĐỘNG THÀNH CÔNG!",
-            description="Hệ thống tự động sinh Key VIP ngay khi truy cập link đã sẵn sàng.",
+            description="Hệ thống Key VIP (NGHUYDIY-) đã sẵn sàng.",
             color=discord.Color.green()
         )
         embed.add_field(name="Lệnh cơ bản", value="Dùng `!help` hoặc `!getkey` để bắt đầu.", inline=False)
@@ -74,8 +74,9 @@ async def on_member_join(member):
         except Exception as e:
             print(f"Không thể gửi tin nhắn chào mừng: {e}")
 
-# --- CẤU HÌNH WEB SERVER (FLASK) - TỰ ĐỘNG HIỆN KEY KHI VÀO LINK ---
+# --- CẤU HÌNH WEB SERVER (FLASK) ---
 app = Flask(__name__)
+app.secret_key = "nghuydiy_secret_key_change_this"  # Khóa bí mật để quản lý session Flask
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -93,7 +94,7 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="mainContainer">
         <h2>NHẬN KEY VIP DISCORD</h2>
         <p style="color: #38bdf8; font-weight: bold;">🔑 Nhấn vào ô bên dưới để sao chép key & tự đóng trang:</p>
         
@@ -108,21 +109,32 @@ HTML_TEMPLATE = """
     <div id="toast" class="toast">Đã sao chép Key thành công! Đang đóng trang...</div>
 
     <script>
-        // Kiểm tra xem trình duyệt đã lấy key này chưa để chống F5 / truy cập lại
-        if (localStorage.getItem("key_claimed")) {
-            document.body.innerHTML = "<div class='container'><h3 style='color:#ef4444;'>Bạn đã lấy key này rồi hoặc link đã hết hạn!</h3><p style='color:#cbd5e1;'>Vui lòng lấy link mới từ Discord.</p></div>";
-        } else {
-            localStorage.setItem("key_claimed", "true");
+        // Kiểm tra nếu session trình duyệt này đã lấy key rồi mà cố tình F5 hoặc tải lại
+        if (sessionStorage.getItem("current_key_claimed") === "true") {
+            document.getElementById("mainContainer").innerHTML = `
+                <h3 style='color:#ef4444;'>Trang này đã được tải lại hoặc key đã được lấy!</h3>
+                <p style='color:#cbd5e1;'>Vui lòng lấy link mới từ Discord nếu bạn muốn tạo key tiếp theo.</p>
+            `;
         }
 
+        // Chặn nếu người dùng bấm F5 (load lại trang)
+        window.addEventListener('beforeunload', function () {
+            sessionStorage.setItem("current_key_claimed", "true");
+        });
+
         function copyAndClose(text) {
+            // Đánh dấu đã lấy key trên tab hiện tại
+            sessionStorage.setItem("current_key_claimed", "true");
+
             navigator.clipboard.writeText(text).then(function() {
                 let toast = document.getElementById("toast");
                 toast.style.display = "block";
                 setTimeout(function() {
                     window.close();
-                    // Phòng trường hợp trình duyệt chặn window.close()
-                    document.body.innerHTML = "<div class='container'><h2 style='color:#22c55e;'>Đã sao chép Key thành công!</h2><p style='color:#cbd5e1;'>Bạn có thể tắt tab này đi.</p></div>";
+                    document.getElementById("mainContainer").innerHTML = `
+                        <h2 style='color:#22c55e;'>Đã sao chép Key thành công!</h2>
+                        <p style='color:#cbd5e1;'>Bạn có thể tắt tab này đi.</p>
+                    `;
                 }, 800);
             }, function(err) {
                 alert('Không thể tự sao chép, vui lòng copy thủ công!');
@@ -135,7 +147,7 @@ HTML_TEMPLATE = """
 
 @app.route("/")
 def home():
-    # Tự động sinh key ngay khi người dùng vừa truy cập vào trang web
+    # Mỗi lần truy cập mới vào trang, sinh ra một key mới độc lập
     chars = string.ascii_uppercase + string.digits
     random_str = ''.join(random.choice(chars) for _ in range(8))
     key = f"NGHUYDIY-{random_str}"
@@ -254,7 +266,7 @@ async def clear(ctx, amount: int):
     await ctx.send(f"🧹 Đã xóa {amount} tin nhắn!", delete_after=3)
 
 @bot.command()
-@commands.has_permissions(kick_members=True)
+@commands.has_permissions(manage_members=True)
 async def kick(ctx, member: discord.Member, *, reason="Không có lý do"):
     if bot_is_sleeping: return
     await member.kick(reason=reason)
