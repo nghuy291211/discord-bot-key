@@ -17,8 +17,8 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 bot_is_sleeping = False
 active_keys = set() 
 
-OWNER_ID = 1530913781515812925  # Thay ID của bạn vào đây
-CUSTOM_GET_KEY_URL = "https://nghuydiy-bot.onrender.com/" 
+OWNER_ID = 000000000000000000  # Thay ID của bạn vào đây
+CUSTOM_GET_KEY_URL = "http://localhost:5000" 
 
 @bot.event
 async def on_ready():
@@ -339,4 +339,4 @@ if __name__ == "__main__":
     web_thread.daemon = True
     web_thread.start()
     
-    bot.run("cocaiconcac")
+    bot.run("YOUR_BOT_TOKEN")
