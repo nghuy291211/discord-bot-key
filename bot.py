@@ -76,7 +76,7 @@ async def on_member_join(member):
 
 # --- CẤU HÌNH WEB SERVER (FLASK) ---
 app = Flask(__name__)
-app.secret_key = "nghuydiy_secret_key_change_this"  # Khóa bí mật để quản lý session Flask
+app.secret_key = "nghuydiy_secret_key_change_this"
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -109,7 +109,6 @@ HTML_TEMPLATE = """
     <div id="toast" class="toast">Đã sao chép Key thành công! Đang đóng trang...</div>
 
     <script>
-        // Kiểm tra nếu session trình duyệt này đã lấy key rồi mà cố tình F5 hoặc tải lại
         if (sessionStorage.getItem("current_key_claimed") === "true") {
             document.getElementById("mainContainer").innerHTML = `
                 <h3 style='color:#ef4444;'>Trang này đã được tải lại hoặc key đã được lấy!</h3>
@@ -117,13 +116,11 @@ HTML_TEMPLATE = """
             `;
         }
 
-        // Chặn nếu người dùng bấm F5 (load lại trang)
         window.addEventListener('beforeunload', function () {
             sessionStorage.setItem("current_key_claimed", "true");
         });
 
         function copyAndClose(text) {
-            // Đánh dấu đã lấy key trên tab hiện tại
             sessionStorage.setItem("current_key_claimed", "true");
 
             navigator.clipboard.writeText(text).then(function() {
@@ -147,7 +144,6 @@ HTML_TEMPLATE = """
 
 @app.route("/")
 def home():
-    # Mỗi lần truy cập mới vào trang, sinh ra một key mới độc lập
     chars = string.ascii_uppercase + string.digits
     random_str = ''.join(random.choice(chars) for _ in range(8))
     key = f"NGHUYDIY-{random_str}"
@@ -165,7 +161,7 @@ def run_web():
 @bot.command(name="myid")
 async def myid(ctx):
     if bot_is_sleeping: return
-    await ctx.send(f"🆔 ID Discord của bạn là: `{ctx.author.id}` (Hãy copy dãy số này dán vào biến `OWNER_ID` trong code Python).")
+    await ctx.send(f"🆔 ID Discord của bạn là: `{ctx.author.id}`")
 
 @bot.command(name="help")
 async def help_command(ctx):
@@ -265,8 +261,9 @@ async def clear(ctx, amount: int):
     await ctx.channel.purge(limit=amount + 1)
     await ctx.send(f"🧹 Đã xóa {amount} tin nhắn!", delete_after=3)
 
+# Đã sửa lỗi 'manage_members' thành 'kick_members' ở đây:
 @bot.command()
-@commands.has_permissions(manage_members=True)
+@commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member, *, reason="Không có lý do"):
     if bot_is_sleeping: return
     await member.kick(reason=reason)
