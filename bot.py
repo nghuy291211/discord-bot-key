@@ -27,7 +27,7 @@ async def on_ready():
     for guild in bot.guilds:
         embed = discord.Embed(
             title="🟢 BOT ĐÃ KHỞI ĐỘNG THÀNH CÔNG!",
-            description="Hệ thống xác thực Key VIP (NGHUYDIY-) dạng một lần đã sẵn sàng.",
+            description="Hệ thống tự động sinh Key VIP ngay khi truy cập link đã sẵn sàng.",
             color=discord.Color.green()
         )
         embed.add_field(name="Lệnh cơ bản", value="Dùng `!help` hoặc `!getkey` để bắt đầu.", inline=False)
@@ -63,7 +63,7 @@ async def on_member_join(member):
         )
         embed.add_field(
             name="📌 Hướng dẫn nhanh:",
-            value="• Gõ `!getkey` để lấy link tạo key dạng `NGHUYDIY-...` nhận quyền VIP.\n• Đọc kỹ nội quy để tránh bị phạt nhé!",
+            value="• Gõ `!getkey` để nhận link lấy key VIP tự động.\n• Đọc kỹ nội quy để tránh bị phạt nhé!",
             inline=False
         )
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -74,7 +74,7 @@ async def on_member_join(member):
         except Exception as e:
             print(f"Không thể gửi tin nhắn chào mừng: {e}")
 
-# --- CẤU HÌNH WEB SERVER (FLASK) ---
+# --- CẤU HÌNH WEB SERVER (FLASK) - TỰ ĐỘNG HIỆN KEY KHI VÀO LINK ---
 app = Flask(__name__)
 
 HTML_TEMPLATE = """
@@ -86,9 +86,7 @@ HTML_TEMPLATE = """
     <style>
         body { font-family: Arial, sans-serif; background-color: #0f172a; color: #fff; text-align: center; padding-top: 80px; }
         .container { background: #1e293b; padding: 40px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.6); width: 420px; }
-        button { background: #22c55e; color: white; border: none; padding: 14px 24px; font-size: 18px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
-        button:hover { background: #16a34a; }
-        .key-box { background: #334155; padding: 20px; border-radius: 8px; cursor: pointer; border: 2px dashed #38bdf8; margin-top: 10px; transition: 0.2s; }
+        .key-box { background: #334155; padding: 20px; border-radius: 8px; cursor: pointer; border: 2px dashed #38bdf8; margin-top: 15px; transition: 0.2s; }
         .key-box:hover { background: #475569; }
         code { color: #facc15; font-size: 26px; font-weight: bold; font-family: monospace; display: block; margin-top: 5px; }
         .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #22c55e; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -97,69 +95,54 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <h2>NHẬN KEY VIP DISCORD</h2>
+        <p style="color: #38bdf8; font-weight: bold;">🔑 Nhấn vào ô bên dưới để sao chép key & tự đóng trang:</p>
         
-        {% if not key %}
-            <p>Bấm nút bên dưới để khởi tạo Key của bạn:</p>
-            <form method="POST" id="keyForm">
-                <button type="submit" id="createBtn">Tạo Key Ngay</button>
-            </form>
-        {% else %}
-            <p style="color: #38bdf8; font-weight: bold;">🔑 Nhấn vào ô bên dưới để sao chép & tự đóng trang:</p>
-            <div class="key-box" onclick="copyAndClose('{{ key }}')">
-                <span style="font-size: 14px; color: #cbd5e1;">BẤM ĐỂ SAO CHÉP</span>
-                <code>{{ key }}</code>
-            </div>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 15px;">(Sau khi sao chép, trang web sẽ tự động đóng lại)</p>
-            
-            <script>
-                // Lưu trạng thái vào trình duyệt để chống F5 hoặc cố tình truy cập lại trang kết quả
-                if (localStorage.getItem("key_claimed")) {
-                    window.location.href = "/";
-                } else {
-                    localStorage.setItem("key_claimed", "true");
-                }
-
-                function copyAndClose(text) {
-                    navigator.clipboard.writeText(text).then(function() {
-                        let toast = document.getElementById("toast");
-                        toast.style.display = "block";
-                        setTimeout(function() {
-                            window.close();
-                            // Phòng trường hợp trình duyệt chặn window.close() tự động
-                            document.body.innerHTML = "<h2 style='color:#22c55e; margin-top:100px;'>Đã sao chép Key thành công! Bạn có thể tắt tab này.</h2>";
-                        }, 800);
-                    }, function(err) {
-                        alert('Không thể tự sao chép, vui lòng copy thủ công!');
-                    });
-                }
-            </script>
-        {% endif %}
+        <div class="key-box" onclick="copyAndClose('{{ key }}')">
+            <span style="font-size: 13px; color: #cbd5e1;">BẤM VÀO ĐÂY ĐỂ SAO CHÉP</span>
+            <code>{{ key }}</code>
+        </div>
+        
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 15px;">(Trang web sẽ tự động đóng sau khi sao chép)</p>
     </div>
 
     <div id="toast" class="toast">Đã sao chép Key thành công! Đang đóng trang...</div>
 
     <script>
-        // Xóa bộ nhớ chống F5 nếu người dùng quay lại trang chủ lấy lượt mới
-        if (window.location.pathname === "/" && !window.location.search) {
-            // Có thể giữ hoặc reset tùy ý, ở đây cho phép tạo mới nếu vào lại từ đầu
+        // Kiểm tra xem trình duyệt đã lấy key này chưa để chống F5 / truy cập lại
+        if (localStorage.getItem("key_claimed")) {
+            document.body.innerHTML = "<div class='container'><h3 style='color:#ef4444;'>Bạn đã lấy key này rồi hoặc link đã hết hạn!</h3><p style='color:#cbd5e1;'>Vui lòng lấy link mới từ Discord.</p></div>";
+        } else {
+            localStorage.setItem("key_claimed", "true");
+        }
+
+        function copyAndClose(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                let toast = document.getElementById("toast");
+                toast.style.display = "block";
+                setTimeout(function() {
+                    window.close();
+                    // Phòng trường hợp trình duyệt chặn window.close()
+                    document.body.innerHTML = "<div class='container'><h2 style='color:#22c55e;'>Đã sao chép Key thành công!</h2><p style='color:#cbd5e1;'>Bạn có thể tắt tab này đi.</p></div>";
+                }, 800);
+            }, function(err) {
+                alert('Không thể tự sao chép, vui lòng copy thủ công!');
+            });
         }
     </script>
 </body>
 </html>
 """
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def home():
-    generated_key = None
-    if request.method == "POST":
-        chars = string.ascii_uppercase + string.digits
-        random_str = ''.join(random.choice(chars) for _ in range(8))
-        key = f"NGHUYDIY-{random_str}"
+    # Tự động sinh key ngay khi người dùng vừa truy cập vào trang web
+    chars = string.ascii_uppercase + string.digits
+    random_str = ''.join(random.choice(chars) for _ in range(8))
+    key = f"NGHUYDIY-{random_str}"
+    
+    active_keys.add(key)
         
-        active_keys.add(key)
-        generated_key = key
-            
-    return render_template_string(HTML_TEMPLATE, key=generated_key)
+    return render_template_string(HTML_TEMPLATE, key=key)
 
 def run_web():
     port = int(os.environ.get("PORT", 5000))
@@ -176,7 +159,7 @@ async def myid(ctx):
 async def help_command(ctx):
     if bot_is_sleeping: return
     embed = discord.Embed(title="🤖 HỆ THỐNG LỆNH", color=discord.Color.green())
-    embed.add_field(name="Lệnh Thành Viên", value="`!getkey` - Lấy link web tạo key NGHHUYDIY-\n`!verify <key>` - Kích hoạt nhận VIP\n`!myid` - Lấy Discord ID", inline=False)
+    embed.add_field(name="Lệnh Thành Viên", value="`!getkey` - Lấy link web nhận key NGHHUYDIY-\n`!verify <key>` - Kích hoạt nhận VIP\n`!myid` - Lấy Discord ID", inline=False)
     embed.add_field(name="Lệnh Chủ Bot", value="`!tao_key` - Tạo key trực tiếp trong chat\n`!vip @user` | `!unvip @user`\n`!clear` | `!kick` | `!timeout`\n`!sleep` | `!wakeup` | `!shutdown`", inline=False)
     await ctx.send(embed=embed)
 
@@ -185,7 +168,7 @@ async def getkey(ctx):
     if bot_is_sleeping:
         await ctx.send("💤 Bot đang ngủ!")
         return
-    await ctx.send(f"🔗 {ctx.author.mention}, hãy truy cập đường dẫn sau để lấy key bảo mật của bạn:\n{CUSTOM_GET_KEY_URL}")
+    await ctx.send(f"🔗 {ctx.author.mention}, truy cập đường dẫn sau để nhận key ngay lập tức:\n{CUSTOM_GET_KEY_URL}")
 
 @bot.command(name="tao_key")
 async def tao_key(ctx):
@@ -223,7 +206,7 @@ async def verify(ctx, user_key: str):
         else:
             await ctx.send("❌ Lỗi: Server chưa tạo Role có tên chính xác là `VIP`.")
     else:
-        await ctx.send("❌ Key không tồn tại hoặc đã được sử dụng trước đó!")
+        await ctx.send("❌ Key không tồn tại hoặc đã được người khác sử dụng trước đó!")
 
 # --- CÁC LỆNH QUẢN TRỊ KHÁC ---
 @bot.command()
