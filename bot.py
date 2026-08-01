@@ -15,24 +15,23 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 bot_is_sleeping = False
-active_keys = {} # Lưu trữ định dạng: { "NGHUYDIY-XXXXXX": discord_user_id }
+# Lưu danh sách key đang hoạt động (Ai nhập trước người đó nhận)
+active_keys = set() 
 
 # 👉 Thay số 0 bằng ID Discord của bạn (Dùng lệnh !myid trong chat để lấy ID)
 OWNER_ID = 1530913781515812925  
 
 # 👉 THAY ĐỔI ĐƯỜNG LINK WEB SAU KHI DEPLOY LÊN RENDER VÀO ĐÂY:
-# (Ví dụ: "https://ten-bot-cua-ban.onrender.com")
 CUSTOM_GET_KEY_URL = "http://localhost:5000" 
 
 @bot.event
 async def on_ready():
     print(f"Bot đã đăng nhập thành công: {bot.user}")
     
-    # Gửi thông báo khởi động vào TOÀN BỘ các kênh văn bản trong server
     for guild in bot.guilds:
         embed = discord.Embed(
             title="🟢 BOT ĐÃ KHỞI ĐỘNG THÀNH CÔNG!",
-            description="Hệ thống xác thực Key VIP (NGHUYDIY-) và bộ lọc link đã sẵn sàng hoạt động.",
+            description="Hệ thống xác thực Key VIP (NGHUYDIY-) không cần nhập ID đã sẵn sàng.",
             color=discord.Color.green()
         )
         embed.add_field(name="Lệnh cơ bản", value="Dùng `!help` hoặc `!getkey` để bắt đầu.", inline=False)
@@ -79,7 +78,7 @@ async def on_member_join(member):
         except Exception as e:
             print(f"Không thể gửi tin nhắn chào mừng: {e}")
 
-# --- CẤU HÌNH WEB SERVER (FLASK) ---
+# --- CẤU HÌNH WEB SERVER (FLASK) - KHÔNG CẦN NHẬP ID ---
 app = Flask(__name__)
 
 HTML_TEMPLATE = """
@@ -91,25 +90,22 @@ HTML_TEMPLATE = """
     <style>
         body { font-family: Arial, sans-serif; background-color: #0f172a; color: #fff; text-align: center; padding-top: 50px; }
         .container { background: #1e293b; padding: 30px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: 400px; }
-        input { padding: 10px; width: 90%; border-radius: 5px; border: none; margin-bottom: 10px; font-size: 16px; }
-        button { background: #22c55e; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 95%; font-weight: bold; }
+        button { background: #22c55e; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 95%; font-weight: bold; }
         button:hover { background: #16a34a; }
         .box { background: #334155; padding: 15px; margin-top: 15px; border-radius: 5px; word-break: break-all; text-align: left; }
-        code { color: #facc15; font-family: monospace; }
-        a { color: #38bdf8; text-decoration: none; font-weight: bold; }
+        code { color: #facc15; font-family: monospace; font-size: 16px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>NHẬN KEY VIP DISCORD</h2>
-        <p>Nhập ID Discord của bạn để tạo key bảo mật:</p>
+        <p>Bấm nút bên dưới để tạo ngay Key VIP (Không cần nhập ID):</p>
         <form method="POST">
-            <input type="text" name="discord_id" placeholder="Nhập Discord ID của bạn..." required><br>
             <button type="submit">Tạo Key Ngay</button>
         </form>
         {% if key %}
             <div class="box">
-                <p>🔑 Key của bạn: <br><code>{{ key }}</code></p>
+                <p>🔑 Key của bạn (Dùng 1 lần): <br><code>{{ key }}</code></p>
                 <p style="font-size: 13px; color: #cbd5e1; margin-top: 10px;">
                     👉 Vào Discord dùng lệnh:<br>
                     <code>!verify {{ key }}</code>
@@ -125,14 +121,13 @@ HTML_TEMPLATE = """
 def home():
     generated_key = None
     if request.method == "POST":
-        discord_id = request.form.get("discord_id")
-        if discord_id and discord_id.isdigit():
-            chars = string.ascii_uppercase + string.digits
-            random_str = ''.join(random.choice(chars) for _ in range(8))
-            key = f"NGHUYDIY-{random_str}"
-            
-            active_keys[key] = int(discord_id)
-            generated_key = key
+        # Tạo chuỗi ngẫu nhiên không cần quan tâm ID người dùng
+        chars = string.ascii_uppercase + string.digits
+        random_str = ''.join(random.choice(chars) for _ in range(8))
+        key = f"NGHUYDIY-{random_str}"
+        
+        active_keys.add(key)
+        generated_key = key
             
     return render_template_string(HTML_TEMPLATE, key=generated_key)
 
@@ -151,8 +146,8 @@ async def myid(ctx):
 async def help_command(ctx):
     if bot_is_sleeping: return
     embed = discord.Embed(title="🤖 HỆ THỐNG LỆNH", color=discord.Color.green())
-    embed.add_field(name="Lệnh Thành Viên", value="`!getkey` - Lấy link tạo key NGHHUYDIY-\n`!verify <key>` - Xác thực nhận VIP (Dùng 1 lần)\n`!myid` - Lấy Discord ID của bạn\n`!serverinfo` | `!coinflip`", inline=False)
-    embed.add_field(name="Lệnh Chủ Bot (Đặc Biệt)", value="`!tao_key @user` - Tạo key trực tiếp (Chỉ chủ bot)\n`!vip @user` | `!unvip @user`\n`!clear` | `!kick` | `!timeout`\n`!sleep` | `!wakeup` | `!shutdown`", inline=False)
+    embed.add_field(name="Lệnh Thành Viên", value="`!getkey` - Lấy link web tạo key NGHHUYDIY-\n`!verify <key>` - Kích hoạt nhận VIP (Ai nhanh người đó được)\n`!myid` - Lấy Discord ID của bạn", inline=False)
+    embed.add_field(name="Lệnh Chủ Bot (Đặc Biệt)", value="`!tao_key` - Tạo key ngẫu nhiên trực tiếp trong chat (Chỉ chủ bot)\n`!vip @user` | `!unvip @user`\n`!clear` | `!kick` | `!timeout`\n`!sleep` | `!wakeup` | `!shutdown`", inline=False)
     await ctx.send(embed=embed)
 
 @bot.command(name="getkey")
@@ -163,7 +158,7 @@ async def getkey(ctx):
     await ctx.send(f"🔗 {ctx.author.mention}, hãy truy cập đường dẫn sau để lấy key bảo mật của bạn:\n{CUSTOM_GET_KEY_URL}")
 
 @bot.command(name="tao_key")
-async def tao_key(ctx, member: discord.Member):
+async def tao_key(ctx):
     if bot_is_sleeping: return
     
     if ctx.author.id != OWNER_ID:
@@ -174,10 +169,10 @@ async def tao_key(ctx, member: discord.Member):
     random_str = ''.join(random.choice(chars) for _ in range(8))
     key = f"NGHUYDIY-{random_str}"
     
-    active_keys[key] = member.id
+    active_keys.add(key)
     
     try:
-        await ctx.send(f"✅ Đã tạo key thành công cho {member.mention}:\n🔑 Key: `{key}`\n*(Hãy gửi key này cho người dùng để họ dùng lệnh `!verify`)*")
+        await ctx.send(f"✅ Đã tạo key ngẫu nhiên thành công:\n🔑 Key: `{key}`\n*(Ai sử dụng lệnh `!verify` đầu tiên sẽ kích hoạt được)*")
     except Exception as e:
         print(f"Lỗi gửi tin nhắn tạo key: {e}")
 
@@ -189,16 +184,19 @@ async def verify(ctx, user_key: str):
         await ctx.send("❌ Key không hợp lệ! Key chuẩn hệ thống phải bắt đầu bằng tiền tố `NGHUYDIY-`.")
         return
     
-    if user_key in active_keys and active_keys[user_key] == ctx.author.id:
+    # Kiểm tra key có tồn tại trong hệ thống hay không
+    if user_key in active_keys:
         role = discord.utils.get(ctx.guild.roles, name="VIP")
         if role:
             await ctx.author.add_roles(role)
-            await ctx.send(f"🎉 Xác thực thành công! Bạn đã nhận được quyền `{role.name}`.")
-            del active_keys[user_key]
+            await ctx.send(f"🎉 Xác thực thành công! {ctx.author.mention} đã nhận được quyền `{role.name}`.")
+            
+            # XÓA VĨNH VIỄN KEY NGAY SAU KHI CÓ NGƯỜI KÍCH HOẠT ĐẦU TIÊN
+            active_keys.remove(user_key)
         else:
             await ctx.send("❌ Lỗi: Server của bạn chưa tạo Role có tên chính xác là `VIP`.")
     else:
-        await ctx.send("❌ Key không tồn tại, đã được sử dụng trước đó (hết hạn) hoặc không phải do chính bạn tạo!")
+        await ctx.send("❌ Key không tồn tại hoặc đã có người khác nhanh tay kích hoạt trước đó rồi!")
 
 # --- LỆNH CẤP VÀ GỠ VIP ---
 @bot.command()
