@@ -1,14 +1,12 @@
-import os
 import discord
 from discord import app_commands
-from dotenv import load_dotenv
 
-load_dotenv()
-TOKEN = os.getenv("TOKEN")
+# --- CẤU HÌNH TRỰC TIẾP (KHÔNG DÙNG ENV) ---
+TOKEN = "TOKEN"  # Dán Token bot Discord của bạn vào đây
 
 # --- DANH SÁCH 5 ID CHỦ BOT TỐI CAO ---
 OWNER_IDS = [
-    1530913781515812925,  # Thay bằng ID chủ bot 1
+    123456789012345678,  # Thay bằng ID chủ bot 1
     234567890123456789,  # Thay bằng ID chủ bot 2
     345678901234567890,  # Thay bằng ID chủ bot 3
     456789012345678901,  # Thay bằng ID chủ bot 4
@@ -25,77 +23,93 @@ intents.members = True
 intents.message_content = True
 intents.moderation = True
 
-class AdvancedBot(discord.Client):
+class UltimateBot(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
         await self.tree.sync()
-        print("[BOT] Đã đồng bộ thành công toàn bộ lệnh phân quyền.")
+        print("[BOT] Đã đồng bộ thành công toàn bộ hệ thống lệnh nâng cao.")
 
-client = AdvancedBot()
+client = UltimateBot()
 
 @client.event
 async def on_ready():
     print(f"[BOT] Đã đăng nhập: {client.user} (ID: {client.user.id})")
-    await client.change_presence(activity=discord.Game(name="Gõ !help hoặc dùng Slash commands"))
+    await client.change_presence(activity=discord.Game(name="!help | Quản lý Server Toàn Diện"))
 
-# --- HỆ THỐNG SỰ KIỆN TỰ ĐỘNG & LỆNH !HELP ---
+
+# ==========================================================
+# HỆ THỐNG TỰ ĐỘNG: GÁN ROLE CHỨC VỤ & CHÀO MỪNG KHI JOIN
+# ==========================================================
 @client.event
 async def on_member_join(member: discord.Member):
-    role = discord.utils.get(member.guild.roles, name="Thành Viên") or discord.utils.get(member.guild.roles, name="Member")
-    if role:
+    guild = member.guild
+    
+    # 1. Tự động kiểm tra và gán role "Thành Viên" mặc định
+    member_role = discord.utils.get(guild.roles, name="Thành Viên")
+    if not member_role:
         try:
-            await member.add_roles(role)
+            member_role = await guild.create_role(name="Thành Viên", color=discord.Color.green(), reason="Tự động tạo role Thành Viên")
+        except:
+            pass
+            
+    if member_role:
+        try:
+            await member.add_roles(member_role)
         except:
             pass
 
-    channel = discord.utils.get(member.guild.text_channels, name="welcome") or discord.utils.get(member.guild.text_channels, name="chao-mung")
+    # 2. Gửi tin nhắn chào mừng
+    channel = discord.utils.get(guild.text_channels, name="welcome") or discord.utils.get(guild.text_channels, name="chao-mung")
     if channel:
         embed = discord.Embed(
             title="🎉 Chào mừng bạn đến với Server!",
-            description=f"Xin chào {member.mention}, rất vui được đón tiếp bạn đến với **{member.guild.name}**!",
+            description=f"Xin chào {member.mention}, rất vui được đón tiếp bạn đến với **{guild.name}**!",
             color=discord.Color.green()
         )
         embed.set_thumbnail(url=member.display_avatar.url)
-        embed.set_footer(text=f"Thành viên thứ: {member.guild.member_count}")
+        embed.set_footer(text=f"Thành viên thứ: {guild.member_count}")
         await channel.send(embed=embed)
 
+
+# ==========================================================
+# HỆ THỐNG TRỢ GIÚP (!HELP)
+# ==========================================================
 @client.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    # Bảng trợ giúp phân định rõ từng nhóm lệnh
     if message.content.startswith('!help'):
         embed = discord.Embed(
-            title="📖 HỆ THỐNG TRỢ GIÚP - PHÂN LOẠI LỆNH",
-            description="Dưới đây là danh sách toàn bộ các lệnh được chia theo phân quyền:",
+            title="📖 HỆ THỐNG TRỢ GIÚP - BOT QUẢN LÝ TỐI CAO",
+            description="Danh sách toàn bộ các tính năng và lệnh được phân loại chi tiết:",
             color=discord.Color.blue()
         )
         embed.add_field(
             name="🟢 1. Nhóm Lệnh Thành Viên (User Commands)",
-            value="• `/serverinfo` - Xem thông tin chi tiết máy chủ\n• `/userinfo` - Xem thông tin tài khoản cá nhân hoặc người khác",
+            value="• `/serverinfo` - Xem thông tin chi tiết máy chủ\n• `/userinfo` - Xem thông tin tài khoản cá nhân/người khác\n• `/botinfo` - Xem thông tin về con bot\n• `/ping` - Kiểm tra độ trễ (latency)",
             inline=False
         )
         embed.add_field(
-            name="🟡 2. Nhóm Lệnh Quản Trị / Admin (Admin Commands)",
-            value="• `/kick` - Đuổi thành viên khỏi server\n• `/ban` - Cấm vĩnh viễn thành viên\n• `/unban` - Gỡ ban bằng ID\n• `/timeout` - Cô lập (mute) thành viên\n• `/untimeout` - Gỡ cô lập thành viên\n• `/clear` - Xóa hàng loạt tin nhắn (1-100)\n• `/lock` / `/unlock` - Khóa/mở khóa kênh chat\n• `/slowmode` - Chỉnh thời gian chậm của kênh\n• `/role-add` / `/role-remove` - Cấp/gỡ vai trò\n• `/nickname` - Đổi biệt danh thành viên\n• `/poll` - Tạo bảng khảo sát",
+            name="🟡 2. Nhóm Lệnh Quản Trị / Admin (Moderation & Management)",
+            value="• `/kick` - Đuổi thành viên\n• `/ban` / `/unban` - Cấm / Gỡ cấm thành viên\n• `/timeout` / `/untimeout` - Cô lập / Gỡ cô lập thành viên\n• `/clear` - Xóa hàng loạt tin nhắn (1-100)\n• `/lock` / `/unlock` - Khóa / Mở khóa kênh chat\n• `/slowmode` - Đặt chế độ chậm cho kênh\n• `/nickname` - Đổi biệt danh\n• `/poll` - Tạo bảng khảo sát nhanh\n• `/channel-create` / `/channel-delete` - Quản lý kênh",
             inline=False
         )
         embed.add_field(
-            name="🔴 3. Nhóm Lệnh Chủ Bot (Bot Owner Commands - 5 IDs)",
-            value="• `/owner-broadcast` - Gửi thông báo hệ thống tối cao\n• `/owner-shutdown` - Tắt nguồn bot từ xa khẩn cấp",
+            name="🔴 3. Nhóm Lệnh Chủ Bot & Phân Chia Chức Vụ (Owner Only)",
+            value="• `/set-rank` - **[ĐỘC QUYỀN CHỦ BOT]** Phân chia/Gán chức vụ Role (`Owner`, `Admin`, `Thành Viên`) cho thành viên\n• `/owner-broadcast` - Gửi thông báo toàn hệ thống\n• `/owner-shutdown` - Tắt nguồn bot từ xa",
             inline=False
         )
-        embed.set_footer(text="Sử dụng dấu gạch chéo (/) để chạy các lệnh tương tác.")
+        embed.set_footer(text="Sử dụng dấu gạch chéo (/) để chạy các lệnh tương tác trực quan.")
         await message.channel.send(embed=embed)
 
 
-# ==========================================
+# ==========================================================
 # 🟢 1. NHÓM LỆNH THÀNH VIÊN (USER COMMANDS)
-# ==========================================
+# ==========================================================
 
 @client.tree.command(name="serverinfo", description="[Thành viên] Xem thông tin tổng quan chi tiết của máy chủ.")
 async def serverinfo(interaction: discord.Interaction):
@@ -123,10 +137,22 @@ async def userinfo(interaction: discord.Interaction, user: discord.Member = None
     embed.add_field(name=f"🎭 Vai trò ({len(roles)})", value=" ".join(roles) if roles else "Không có", inline=False)
     await interaction.response.send_message(embed=embed)
 
+@client.tree.command(name="botinfo", description="[Thành viên] Xem thông tin về hệ thống bot quản lý.")
+async def botinfo(interaction: discord.Interaction):
+    embed = discord.Embed(title="🤖 Thông Tin Bot Quản Lý", description="Hệ thống bot quản lý server toàn diện tích hợp bảo mật chủ bot đa tài khoản.", color=discord.Color.teal())
+    embed.add_field(name="Trạng thái", value="🟢 Hoạt động 24/7", inline=True)
+    embed.add_field(name="Thư viện", value="Discord.py", inline=True)
+    await interaction.response.send_message(embed=embed)
 
-# =======================================================
-# 🟡 2. NHÓM LỆNH QUẢN TRỊ / ROLE ADMIN (ADMIN COMMANDS)
-# =======================================================
+@client.tree.command(name="ping", description="[Thành viên] Kiểm tra độ trễ phản hồi của bot.")
+async def ping(interaction: discord.Interaction):
+    latency = round(client.latency * 1000)
+    await interaction.response.send_message(f"pong! Độ trễ phản hồi của bot là: `{latency}ms`", ephemeral=True)
+
+
+# ==========================================================
+# 🟡 2. NHÓM LỆNH QUẢN TRỊ / ADMIN (MODERATION & MANAGEMENT)
+# ==========================================================
 
 @client.tree.command(name="kick", description="[Admin] Đuổi một thành viên khỏi server.")
 @app_commands.describe(user="Thành viên cần đuổi", reason="Lý do")
@@ -200,20 +226,6 @@ async def slowmode(interaction: discord.Interaction, seconds: int):
     else:
         await interaction.response.send_message(f"⏱️ Đã đặt slowmode thành {seconds} giây.")
 
-@client.tree.command(name="role-add", description="[Admin] Cấp một vai trò cho thành viên.")
-@app_commands.describe(user="Thành viên", role="Vai trò cần cấp")
-@app_commands.checks.has_permissions(manage_roles=True)
-async def role_add(interaction: discord.Interaction, user: discord.Member, role: discord.Role):
-    await user.add_roles(role)
-    await interaction.response.send_message(f"✅ Đã cấp vai trò **{role.name}** cho **{user}**.", ephemeral=True)
-
-@client.tree.command(name="role-remove", description="[Admin] Gỡ một vai trò của thành viên.")
-@app_commands.describe(user="Thành viên", role="Vai trò cần gỡ")
-@app_commands.checks.has_permissions(manage_roles=True)
-async def role_remove(interaction: discord.Interaction, user: discord.Member, role: discord.Role):
-    await user.remove_roles(role)
-    await interaction.response.send_message(f"❌ Đã gỡ vai trò **{role.name}** khỏi **{user}**.", ephemeral=True)
-
 @client.tree.command(name="nickname", description="[Admin] Thay đổi biệt danh của thành viên.")
 @app_commands.describe(user="Thành viên", new_name="Biệt danh mới (để trống để xóa)")
 @app_commands.checks.has_permissions(manage_nicknames=True)
@@ -232,12 +244,67 @@ async def poll(interaction: discord.Interaction, question: str):
     await message.add_reaction("👍")
     await message.add_reaction("👎")
 
+@client.tree.command(name="channel-create", description="[Admin] Tạo một kênh văn bản mới trong server.")
+@app_commands.describe(name="Tên kênh mới")
+@app_commands.checks.has_permissions(manage_channels=True)
+async def channel_create(interaction: discord.Interaction, name: str):
+    guild = interaction.guild
+    await guild.create_text_channel(name=name)
+    await interaction.response.send_message(f"📁 Đã tạo thành công kênh văn bản: **#{name}**", ephemeral=True)
 
-# ==========================================
-# 🔴 3. NHÓM LỆNH CHỦ BOT (OWNER COMMANDS)
-# ==========================================
+@client.tree.command(name="channel-delete", description="[Admin] Xóa kênh văn bản hiện tại.")
+@app_commands.checks.has_permissions(manage_channels=True)
+async def channel_delete(interaction: discord.Interaction):
+    channel = interaction.channel
+    await interaction.response.send_message(f"🗑️ Đang tiến hành xóa kênh **{channel.name}**...", ephemeral=True)
+    await channel.delete()
 
-@client.tree.command(name="owner-broadcast", description="[Chủ Bot] Gửi thông báo hệ thống toàn cầu bằng Embed đỏ.")
+
+# ==========================================================
+# 🔴 3. NHÓM LỆNH CHỦ BOT & PHÂN CHIA CHỨC VỤ (OWNER ONLY)
+# ==========================================================
+
+@client.tree.command(name="set-rank", description="[CHỦ BOT ĐỘC QUYỀN] Phân chia chức vụ thông qua Role tương ứng.")
+@app_commands.describe(
+    user="Thành viên cần phân chia chức vụ",
+    rank="Chọn chức vụ: Owner (Chủ Bot), Admin (Quản Lí), Thành Viên (Thành Viên)"
+)
+@app_commands.choices(rank=[
+    app_commands.Choice(name="Owner (Chủ Bot)", value="Owner"),
+    app_commands.Choice(name="Admin (Quản Lí)", value="Admin"),
+    app_commands.Choice(name="Thành Viên (Thành Viên)", value="Thành Viên")
+])
+async def set_rank(interaction: discord.Interaction, user: discord.Member, rank: str):
+    # Kiểm tra bảo mật: Chỉ 5 Chủ Bot mới được dùng lệnh này
+    if not is_owner(interaction.user.id):
+        await interaction.response.send_message("⛔ Lệnh này chỉ dành riêng cho **5 Chủ Bot tối cao** mới có quyền phân chia chức vụ!", ephemeral=True)
+        return
+
+    guild = interaction.guild
+    role_name = rank  # "Owner", "Admin", hoặc "Thành Viên"
+    
+    # Tìm hoặc tự động tạo role tương ứng trong Server nếu chưa có
+    role = discord.utils.get(guild.roles, name=role_name)
+    if not role:
+        color_map = {
+            "Owner": discord.Color.red(),
+            "Admin": discord.Color.gold(),
+            "Thành Viên": discord.Color.green()
+        }
+        try:
+            role = await guild.create_role(name=role_name, color=color_map.get(role_name, discord.Color.default()), reason="Tự động tạo role chức vụ hệ thống")
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Không thể tạo role mới do thiếu quyền hệ thống: {e}", ephemeral=True)
+            return
+
+    try:
+        # Gán role chức vụ cho thành viên
+        await user.add_roles(role)
+        await interaction.response.send_message(f"👑 [HỆ THỐNG CHỦ BOT]: Đã phân chia thành công chức vụ **{role_name}** cho thành viên **{user.mention}** thông qua Role!", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Lỗi khi gán role chức vụ: {e}", ephemeral=True)
+
+@client.tree.command(name="owner-broadcast", description="[CHỦ BOT] Gửi thông báo hệ thống toàn cầu bằng Embed đỏ.")
 @app_commands.describe(message="Nội dung thông báo tối cao")
 async def owner_broadcast(interaction: discord.Interaction, message: str):
     if not is_owner(interaction.user.id):
@@ -248,7 +315,7 @@ async def owner_broadcast(interaction: discord.Interaction, message: str):
     embed.set_footer(text=f"Phát hành bởi: {interaction.user}", icon_url=interaction.user.display_avatar.url)
     await interaction.response.send_message(embed=embed)
 
-@client.tree.command(name="owner-shutdown", description="[Chủ Bot] Tắt nguồn bot khẩn cấp từ xa.")
+@client.tree.command(name="owner-shutdown", description="[CHỦ BOT] Tắt nguồn bot khẩn cấp từ xa.")
 async def owner_shutdown(interaction: discord.Interaction):
     if not is_owner(interaction.user.id):
         await interaction.response.send_message("⛔ Lệnh này chỉ dành riêng cho **5 Chủ Bot tối cao**!", ephemeral=True)
@@ -258,11 +325,11 @@ async def owner_shutdown(interaction: discord.Interaction):
     await client.close()
 
 
-# Xử lý lỗi thiếu quyền hạn
+# Xử lý lỗi thiếu quyền hạn hệ thống
 @client.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("❌ Bạn không có đủ quyền hạn (`Permissions`) để sử dụng lệnh này!", ephemeral=True)
+        await interaction.response.send_message("❌ Bạn không có đủ quyền hạn (`Permissions`) để thực hiện hành động này!", ephemeral=True)
     else:
         print(f"Lỗi: {error}")
 
