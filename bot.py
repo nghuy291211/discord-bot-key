@@ -171,19 +171,14 @@ async def coinflip(interaction: discord.Interaction):
 
 from google import genai
 
-# Khởi tạo Gemini AI (tự động lấy API key từ biến môi trường GEMINI_API_KEY)
-gemini_client = genai.Client()
-
 @client.tree.command(name="8ball", description="[Giải trí AI] Hỏi quả cầu kỳ diệu và trò chuyện thông minh như trợ lý AI.")
 @app_commands.describe(question="Câu hỏi hoặc điều bạn muốn tâm sự với quả cầu")
 async def eight_ball(interaction: discord.Interaction, question: str):
-    # Gửi tín hiệu đang suy nghĩ vì gọi AI sẽ mất tầm 1-2 giây
     await interaction.response.defer(thinking=True)
     
     user_name = interaction.user.name
     
     try:
-        # Định nghĩa tính cách cho quả cầu AI
         prompt = f"""
         Bạn là một quả cầu 8-ball ma thuật nhưng có trí tuệ nhân tạo cực kỳ thông minh, sâu sắc và thân thiện giống như một trợ lý AI cao cấp. 
         Người dùng {user_name} đang hỏi bạn: "{question}"
@@ -191,7 +186,6 @@ async def eight_ball(interaction: discord.Interaction, question: str):
         Đừng chỉ trả lời 'Có' hoặc 'Không', hãy phân tích hoặc đưa ra lời khuyên lôi cuốn giống như một người bạn tâm giao thực thụ.
         """
         
-        # Gọi Gemini Model mới nhất
         response = gemini_client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
@@ -207,11 +201,7 @@ async def eight_ball(interaction: discord.Interaction, question: str):
     except Exception as e:
         print(f"Lỗi gọi Gemini API: {e}")
         await interaction.followup.send("🔮 Hơi sương mù đang che phủ quả cầu... Tôi tạm thời chưa kết nối được với vũ trụ, hãy thử lại sau nhé!", ephemeral=True)
-    
-    embed = discord.Embed(title="🎱 Quả Cầu Ma Thuật", color=discord.Color.purple())
-    embed.add_field(name="Câu hỏi:", value=question, inline=False)
-    embed.add_field(name="Phán quyết:", value=random.choice(answers), inline=False)
-    await interaction.response.send_message(embed=embed)
+
 
 @client.tree.command(name="rps", description="[Giải trí] Chơi oẳn tù tì (Kéo, Búa, Bao) với bot.")
 @app_commands.describe(choice="Lựa chọn của bạn")
