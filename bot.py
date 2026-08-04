@@ -212,14 +212,16 @@ async def rps(interaction: discord.Interaction, choice: str):
 # 🎵 2. NHÓM LỆNH PHÁT NHẠC / VIDEO (MUSIC / VOICE)
 # ==========================================================
 
-@client.tree.command(name="play", description="[Phát nhạc] Phát âm thanh từ link hoặc tên bài hát trên YouTube.")
-@app_commands.describe(search="Tên bài hát hoặc đường dẫn YouTube cần phát")
+@client.tree.command(name="play", description="[Phát nhạc/Video] Dán link YouTube hoặc nhập tên bài hát để phát trong voice.")
+@app_commands.describe(search="Dán link YouTube (URL) hoặc nhập tên bài hát")
 async def play(interaction: discord.Interaction, search: str):
     if not interaction.user.voice:
-        await interaction.response.send_message("⚠️ Bạn cần phải tham gia vào một Kênh Thoại (Voice Channel) trước khi dùng lệnh phát nhạc!", ephemeral=True)
+        await interaction.response.send_message("⚠️ Bạn cần phải tham gia vào một Kênh Thoại (Voice Channel) trước!", ephemeral=True)
         return
 
+    # PHẢI GỌI DEFER NGAY LẬP TỨC ĐỂ TRÁNH LỖI TIMEOUT 3 GIÂY CỦA DISCORD
     await interaction.response.defer(thinking=True)
+    
     voice_channel = interaction.user.voice.channel
     
     if not interaction.guild.voice_client:
@@ -232,9 +234,9 @@ async def play(interaction: discord.Interaction, search: str):
     try:
         player = await YTDLSource.from_url(search, loop=client.loop, stream=True)
         interaction.guild.voice_client.play(player, after=lambda e: print(f'Lỗi âm thanh: {e}') if e else None)
-        await interaction.followup.send(f"🎶 Đang phát bài hát: **{player.title}**")
+        await interaction.followup.send(f"▶️ Đang phát: **{player.title}**")
     except Exception as e:
-        await interaction.followup.send(f"❌ Không thể tải hoặc phát tệp này: {e}")
+        await interaction.followup.send(f"❌ Không thể phát video từ liên kết này: {e}")
 
 @client.tree.command(name="stop", description="[Phát nhạc] Dừng phát nhạc và đuổi bot ra khỏi kênh thoại.")
 async def stop(interaction: discord.Interaction):
