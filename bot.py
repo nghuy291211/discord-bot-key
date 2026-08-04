@@ -207,7 +207,7 @@ async def eight_ball(interaction: discord.Interaction, question: str):
     except Exception as e:
         print(f"Lỗi gọi Gemini API: {e}")
         await interaction.followup.send("🔮 Hơi sương mù đang che phủ quả cầu... Tôi tạm thời chưa kết nối được với vũ trụ, hãy thử lại sau nhé!", ephemeral=True)
-    ]
+    
     embed = discord.Embed(title="🎱 Quả Cầu Ma Thuật", color=discord.Color.purple())
     embed.add_field(name="Câu hỏi:", value=question, inline=False)
     embed.add_field(name="Phán quyết:", value=random.choice(answers), inline=False)
