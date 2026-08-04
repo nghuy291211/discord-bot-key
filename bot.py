@@ -5,6 +5,16 @@ import discord
 from discord import app_commands
 from dotenv import load_dotenv
 import yt_dlp
+from google import genai
+import os
+
+# Khởi tạo client gọi API
+from google import genai
+import os
+
+# Khởi tạo client gọi API
+gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+
 
 # Tải biến môi trường
 load_dotenv()
