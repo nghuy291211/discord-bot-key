@@ -169,12 +169,44 @@ async def coinflip(interaction: discord.Interaction):
     embed = discord.Embed(title="🪙 Tung Đồng Xu", description=f"Kết quả đồng xu gọi tên: **{result}**", color=discord.Color.gold())
     await interaction.response.send_message(embed=embed)
 
-@client.tree.command(name="8ball", description="[Giải trí] Đặt câu hỏi và để quả cầu ma thuật 8-ball giải đáp.")
-@app_commands.describe(question="Câu hỏi của bạn")
+from google import genai
+
+# Khởi tạo Gemini AI (tự động lấy API key từ biến môi trường GEMINI_API_KEY)
+gemini_client = genai.Client()
+
+@client.tree.command(name="8ball", description="[Giải trí AI] Hỏi quả cầu kỳ diệu và trò chuyện thông minh như trợ lý AI.")
+@app_commands.describe(question="Câu hỏi hoặc điều bạn muốn tâm sự với quả cầu")
 async def eight_ball(interaction: discord.Interaction, question: str):
-    answers = [
-        "Chắc chắn là vậy rồi! ✅", "Có thể lắm chứ. 👍", "Không thể nào đoán trước được. 🔮",
-        "Tuyệt đối không! ❌", "Hỏi lại vào lúc khác nhé. ⏰", "Triển vọng rất sáng sủa! ✨", "Không có cửa đâu bạn trẻ. 💀"
+    # Gửi tín hiệu đang suy nghĩ vì gọi AI sẽ mất tầm 1-2 giây
+    await interaction.response.defer(thinking=True)
+    
+    user_name = interaction.user.name
+    
+    try:
+        # Định nghĩa tính cách cho quả cầu AI
+        prompt = f"""
+        Bạn là một quả cầu 8-ball ma thuật nhưng có trí tuệ nhân tạo cực kỳ thông minh, sâu sắc và thân thiện giống như một trợ lý AI cao cấp. 
+        Người dùng {user_name} đang hỏi bạn: "{question}"
+        Hãy trả lời bằng tiếng Việt, ngắn gọn (dưới 3-4 câu), mang một chút phong cách huyền bí, chiêm tinh nhưng rất thực tế, dí dỏm và thông minh. 
+        Đừng chỉ trả lời 'Có' hoặc 'Không', hãy phân tích hoặc đưa ra lời khuyên lôi cuốn giống như một người bạn tâm giao thực thụ.
+        """
+        
+        # Gọi Gemini Model mới nhất
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+        )
+        
+        ai_reply = response.text if response.text else "Quả cầu đang mải suy ngẫm, hãy thử lại sau nhé!"
+        
+        embed = discord.Embed(title="🔮 Quả Cầu Ma Thuật 8-ball (AI)", color=discord.Color.purple())
+        embed.add_field(name=f"💬 Câu hỏi từ {user_name}:", value=question, inline=False)
+        embed.add_field(name="✨ Phán quyết của quả cầu:", value=ai_reply, inline=False)
+        await interaction.followup.send(embed=embed)
+        
+    except Exception as e:
+        print(f"Lỗi gọi Gemini API: {e}")
+        await interaction.followup.send("🔮 Hơi sương mù đang che phủ quả cầu... Tôi tạm thời chưa kết nối được với vũ trụ, hãy thử lại sau nhé!", ephemeral=True)
     ]
     embed = discord.Embed(title="🎱 Quả Cầu Ma Thuật", color=discord.Color.purple())
     embed.add_field(name="Câu hỏi:", value=question, inline=False)
