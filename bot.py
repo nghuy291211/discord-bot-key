@@ -12,7 +12,7 @@ TOKEN = os.getenv("TOKEN")
 
 # --- DANH SÁCH 5 ID CHỦ BOT TỐI CAO ---
 OWNER_IDS = [
-    `1530913781515812925,  # Thay bằng ID chủ bot 1
+    1530913781515812925,  # Thay bằng ID chủ bot 1
     234567890123456789,  # Thay bằng ID chủ bot 2
     345678901234567890,  # Thay bằng ID chủ bot 3
     456789012345678901,  # Thay bằng ID chủ bot 4
