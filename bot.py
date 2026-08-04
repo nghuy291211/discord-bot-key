@@ -1,8 +1,13 @@
+import os
 import discord
 from discord import app_commands
+from dotenv import load_dotenv
 
-# --- CẤU HÌNH TRỰC TIẾP (KHÔNG DÙNG ENV) ---
-TOKEN = "TOKEN"  # Dán Token bot Discord của bạn vào đây
+# Tải biến môi trường (dùng khi chạy trên máy cá nhân với file .env)
+load_dotenv()
+
+# Lấy Token bảo mật từ biến môi trường (Render / .env)
+TOKEN = os.getenv("TOKEN")
 
 # --- DANH SÁCH 5 ID CHỦ BOT TỐI CAO ---
 OWNER_IDS = [
@@ -255,7 +260,6 @@ async def channel_delete(interaction: discord.Interaction):
 @app_commands.describe(user="Thành viên cần kiểm tra")
 @app_commands.checks.has_permissions(manage_roles=True)
 async def check_user(interaction: discord.Interaction, user: discord.Member):
-    # Lọc lấy các quyền quan trọng đang được bật của thành viên
     permissions = user.guild_permissions
     active_perms = []
     if permissions.administrator:
@@ -297,15 +301,13 @@ async def check_user(interaction: discord.Interaction, user: discord.Member):
     app_commands.Choice(name="Thành Viên (Thành Viên)", value="Thành Viên")
 ])
 async def set_rank(interaction: discord.Interaction, user: discord.Member, rank: str):
-    # Kiểm tra bảo mật: Chỉ 5 Chủ Bot mới được dùng lệnh này
     if not is_owner(interaction.user.id):
         await interaction.response.send_message("⛔ Lệnh này chỉ dành riêng cho **5 Chủ Bot tối cao** mới có quyền phân chia chức vụ!", ephemeral=True)
         return
 
     guild = interaction.guild
-    role_name = rank  # "Owner", "Admin", hoặc "Thành Viên"
+    role_name = rank  
     
-    # Tìm hoặc tự động tạo role tương ứng trong Server nếu chưa có
     role = discord.utils.get(guild.roles, name=role_name)
     if not role:
         color_map = {
@@ -320,7 +322,6 @@ async def set_rank(interaction: discord.Interaction, user: discord.Member, rank:
             return
 
     try:
-        # Gán role chức vụ cho thành viên
         await user.add_roles(role)
         await interaction.response.send_message(f"👑 [HỆ THỐNG CHỦ BOT]: Đã phân chia thành công chức vụ **{role_name}** cho thành viên **{user.mention}** thông qua Role!", ephemeral=True)
     except Exception as e:
