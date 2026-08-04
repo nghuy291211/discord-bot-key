@@ -6,7 +6,7 @@ TOKEN = "TOKEN"  # Dán Token bot Discord của bạn vào đây
 
 # --- DANH SÁCH 5 ID CHỦ BOT TỐI CAO ---
 OWNER_IDS = [
-    123456789012345678,  # Thay bằng ID chủ bot 1
+    1530913781515812925,  # Thay bằng ID chủ bot 1
     234567890123456789,  # Thay bằng ID chủ bot 2
     345678901234567890,  # Thay bằng ID chủ bot 3
     456789012345678901,  # Thay bằng ID chủ bot 4
@@ -37,7 +37,7 @@ client = UltimateBot()
 @client.event
 async def on_ready():
     print(f"[BOT] Đã đăng nhập: {client.user} (ID: {client.user.id})")
-    await client.change_presence(activity=discord.Game(name="!help | Quản lý Server Toàn Diện"))
+    await client.change_presence(activity=discord.Game(name="/help | Quản lý Server Toàn Diện"))
 
 
 # ==========================================================
@@ -75,41 +75,33 @@ async def on_member_join(member: discord.Member):
 
 
 # ==========================================================
-# HỆ THỐNG TRỢ GIÚP (!HELP)
+# 🟢 1. NHÓM LỆNH THÀNH VIÊN & TIỆN ÍCH (USER COMMANDS)
 # ==========================================================
-@client.event
-async def on_message(message):
-    if message.author.bot:
-        return
 
-    if message.content.startswith('!help'):
-        embed = discord.Embed(
-            title="📖 HỆ THỐNG TRỢ GIÚP - BOT QUẢN LÝ TỐI CAO",
-            description="Danh sách toàn bộ các tính năng và lệnh được phân loại chi tiết:",
-            color=discord.Color.blue()
-        )
-        embed.add_field(
-            name="🟢 1. Nhóm Lệnh Thành Viên (User Commands)",
-            value="• `/serverinfo` - Xem thông tin chi tiết máy chủ\n• `/userinfo` - Xem thông tin tài khoản cá nhân/người khác\n• `/botinfo` - Xem thông tin về con bot\n• `/ping` - Kiểm tra độ trễ (latency)",
-            inline=False
-        )
-        embed.add_field(
-            name="🟡 2. Nhóm Lệnh Quản Trị / Admin (Moderation & Management)",
-            value="• `/kick` - Đuổi thành viên\n• `/ban` / `/unban` - Cấm / Gỡ cấm thành viên\n• `/timeout` / `/untimeout` - Cô lập / Gỡ cô lập thành viên\n• `/clear` - Xóa hàng loạt tin nhắn (1-100)\n• `/lock` / `/unlock` - Khóa / Mở khóa kênh chat\n• `/slowmode` - Đặt chế độ chậm cho kênh\n• `/nickname` - Đổi biệt danh\n• `/poll` - Tạo bảng khảo sát nhanh\n• `/channel-create` / `/channel-delete` - Quản lý kênh",
-            inline=False
-        )
-        embed.add_field(
-            name="🔴 3. Nhóm Lệnh Chủ Bot & Phân Chia Chức Vụ (Owner Only)",
-            value="• `/set-rank` - **[ĐỘC QUYỀN CHỦ BOT]** Phân chia/Gán chức vụ Role (`Owner`, `Admin`, `Thành Viên`) cho thành viên\n• `/owner-broadcast` - Gửi thông báo toàn hệ thống\n• `/owner-shutdown` - Tắt nguồn bot từ xa",
-            inline=False
-        )
-        embed.set_footer(text="Sử dụng dấu gạch chéo (/) để chạy các lệnh tương tác trực quan.")
-        await message.channel.send(embed=embed)
-
-
-# ==========================================================
-# 🟢 1. NHÓM LỆNH THÀNH VIÊN (USER COMMANDS)
-# ==========================================================
+@client.tree.command(name="help", description="[Thành viên] Hiển thị bảng trợ giúp và phân loại danh sách lệnh của bot.")
+async def help_command(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="📖 HỆ THỐNG TRỢ GIÚP - BOT QUẢN LÝ TỐI CAO",
+        description="Danh sách toàn bộ các tính năng và lệnh được phân loại chi tiết:",
+        color=discord.Color.blue()
+    )
+    embed.add_field(
+        name="🟢 1. Nhóm Lệnh Thành Viên (User Commands)",
+        value="• `/help` - Hiển thị bảng hướng dẫn này\n• `/serverinfo` - Xem thông tin chi tiết máy chủ\n• `/userinfo` - Xem thông tin tài khoản cá nhân/người khác\n• `/botinfo` - Xem thông tin về con bot\n• `/ping` - Kiểm tra độ trễ (latency)",
+        inline=False
+    )
+    embed.add_field(
+        name="🟡 2. Nhóm Lệnh Quản Trị / Admin (Moderation & Management)",
+        value="• `/kick` - Đuổi thành viên\n• `/ban` / `/unban` - Cấm / Gỡ cấm thành viên\n• `/timeout` / `/untimeout` - Cô lập / Gỡ cô lập thành viên\n• `/clear` - Xóa hàng loạt tin nhắn (1-100)\n• `/lock` / `/unlock` - Khóa / Mở khóa kênh chat\n• `/slowmode` - Đặt chế độ chậm cho kênh\n• `/nickname` - Đổi biệt danh\n• `/poll` - Tạo bảng khảo sát nhanh\n• `/channel-create` / `/channel-delete` - Quản lý kênh\n• `/check-user` - Kiểm tra ID và quyền hạn của thành viên",
+        inline=False
+    )
+    embed.add_field(
+        name="🔴 3. Nhóm Lệnh Chủ Bot & Phân Chia Chức Vụ (Owner Only)",
+        value="• `/set-rank` - **[ĐỘC QUYỀN CHỦ BOT]** Phân chia/Gán chức vụ Role (`Owner`, `Admin`, `Thành Viên`)\n• `/owner-broadcast` - Gửi thông báo toàn hệ thống\n• `/owner-shutdown` - Tắt nguồn bot từ xa",
+        inline=False
+    )
+    embed.set_footer(text="Sử dụng dấu gạch chéo (/) để chạy các lệnh tương tác trực quan.")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 @client.tree.command(name="serverinfo", description="[Thành viên] Xem thông tin tổng quan chi tiết của máy chủ.")
 async def serverinfo(interaction: discord.Interaction):
@@ -147,7 +139,7 @@ async def botinfo(interaction: discord.Interaction):
 @client.tree.command(name="ping", description="[Thành viên] Kiểm tra độ trễ phản hồi của bot.")
 async def ping(interaction: discord.Interaction):
     latency = round(client.latency * 1000)
-    await interaction.response.send_message(f"pong! Độ trễ phản hồi của bot là: `{latency}ms`", ephemeral=True)
+    await interaction.response.send_message(f"Pong! Độ trễ phản hồi của bot là: `{latency}ms`", ephemeral=True)
 
 
 # ==========================================================
@@ -258,6 +250,36 @@ async def channel_delete(interaction: discord.Interaction):
     channel = interaction.channel
     await interaction.response.send_message(f"🗑️ Đang tiến hành xóa kênh **{channel.name}**...", ephemeral=True)
     await channel.delete()
+
+@client.tree.command(name="check-user", description="[Admin] Kiểm tra ID, ngày tạo và các quyền hạn cốt lõi của một thành viên.")
+@app_commands.describe(user="Thành viên cần kiểm tra")
+@app_commands.checks.has_permissions(manage_roles=True)
+async def check_user(interaction: discord.Interaction, user: discord.Member):
+    # Lọc lấy các quyền quan trọng đang được bật của thành viên
+    permissions = user.guild_permissions
+    active_perms = []
+    if permissions.administrator:
+        active_perms.append("Administrator (Quản trị tối cao)")
+    if permissions.manage_guild:
+        active_perms.append("Manage Server (Quản lý Server)")
+    if permissions.manage_roles:
+        active_perms.append("Manage Roles (Quản lý Role)")
+    if permissions.kick_members:
+        active_perms.append("Kick Members (Đuổi thành viên)")
+    if permissions.ban_members:
+        active_perms.append("Ban Members (Cấm thành viên)")
+    if permissions.manage_messages:
+        active_perms.append("Manage Messages (Quản lý tin nhắn)")
+    
+    perm_text = ", ".join(active_perms) if active_perms else "Thành viên thông thường (Không có quyền đặc biệt)"
+
+    embed = discord.Embed(title=f"🔍 Kiểm Tra ID & Quyền Hạn: {user}", color=discord.Color.dark_blue())
+    embed.set_thumbnail(url=user.display_avatar.url)
+    embed.add_field(name="ID Tài khoản", value=f"`{user.id}`", inline=False)
+    embed.add_field(name="Là Chủ Bot?", value="✅ Có (Thuộc danh sách 5 Owner tối cao)" if is_owner(user.id) else "❌ Không", inline=False)
+    embed.add_field(name="Các quyền hạn cốt lõi", value=perm_text, inline=False)
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 # ==========================================================
